@@ -38,7 +38,7 @@ def keep_alive():
 
 BOT_TOKEN = "8854493990:AAEXLWaA0AouikzHzImIu9wU6Ul_QXSIxRc"
 
-# आपकी खरीदी गई ज़िप फाइल वाला एकदम सटीक और ओरिजिनल API URL
+# API URL
 API_URL = "https://star-jwt-api1.lovable.app/api/public/token?uid={}&password={}"
 
 
@@ -104,8 +104,9 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Please upload a valid `.json` file.")
     return
 
+  # शानदार और स्मूथ एनिमेशन स्टेप्स
   msg = await update.message.reply_text(
-      "📥 **Downloading file...**\n`[▒▒▒▒▒▒▒▒▒▒] 10%`", parse_mode="Markdown"
+      "📥 **Downloading File...**\n`[██▒▒▒▒▒▒▒▒] 20%`", parse_mode="Markdown"
   )
 
   file_path = f"temp_{doc.file_name}"
@@ -113,8 +114,9 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = await context.bot.get_file(doc.file_id)
     await file.download_to_drive(file_path)
 
+    await asyncio.sleep(0.4)
     await msg.edit_text(
-        "🔍 **Analyzing JSON Structure...**\n`[███▒▒▒▒▒▒▒] 30%`",
+        "🔍 **Analyzing JSON Structure...**\n`[████▒▒▒▒▒▒] 40%`",
         parse_mode="Markdown",
     )
 
@@ -122,6 +124,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       data = json.load(f)
 
     accounts_to_process = []
+    uid_to_password = {}
+
     if isinstance(data, list):
       for acc in data:
         if isinstance(acc, dict):
@@ -132,23 +136,30 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
               or acc.get("token")
           )
           if u is not None and t is not None:
-            accounts_to_process.append((str(u), str(t)))
+            u_str = str(u)
+            pwd_str = str(t)
+            accounts_to_process.append((u_str, pwd_str))
+            uid_to_password[u_str] = pwd_str
     elif isinstance(data, dict):
       for u, t in data.items():
         if u is not None and t is not None:
-          accounts_to_process.append((str(u), str(t)))
+          u_str = str(u)
+          pwd_str = str(t)
+          accounts_to_process.append((u_str, pwd_str))
+          uid_to_password[u_str] = pwd_str
 
     total_count = len(accounts_to_process)
 
+    await asyncio.sleep(0.4)
     await msg.edit_text(
-        f"⚡ **Connecting to Working API Gateway...**\n📊 Total Accounts Found:"
+        f"⚡ **Connecting to API Gateway...**\n📊 Total Accounts Found:"
         f" `{total_count}`\n`[██████▒▒▒▒] 60%`",
         parse_mode="Markdown",
     )
 
-    jwt_tokens = {}
-    working_accs = {}
-    lost_accs = {}
+    jwt_list = []
+    working_list = []
+    lost_list = []
     region_tokens = {}
     success_count = 0
 
@@ -161,22 +172,33 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       ]
       results = await asyncio.gather(*tasks)
 
+    await asyncio.sleep(0.4)
     await msg.edit_text(
-        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████]"
-        " 90%`",
+        "🔄 **Generating JWT Tokens & Sorting...**\n`[████████▒▒] 80%`",
         parse_mode="Markdown",
     )
 
     for u_str, token, reg in results:
+      pwd = uid_to_password.get(u_str, "")
       if token and token != "N/A":
-        jwt_tokens[u_str] = token
-        working_accs[u_str] = token
+        jwt_list.append({"token": token})
+        working_list.append({"uid": u_str, "password": pwd})
         success_count += 1
         if reg not in region_tokens:
-          region_tokens[reg] = {}
-        region_tokens[reg][u_str] = token
+          region_tokens[reg] = []
+        region_tokens[reg].append({"uid": u_str, "token": token})
       else:
-        lost_accs[u_str] = "FAILED"
+        lost_list.append({
+            "uid": u_str,
+            "password": pwd,
+            "error_reason": "API OK but invalid response format or empty token",
+        })
+
+    await asyncio.sleep(0.3)
+    await msg.edit_text(
+        "✨ **Finalizing & Saving Files...**\n`[██████████] 100%`",
+        parse_mode="Markdown",
+    )
 
     jwt_file = "jwt_token.json"
     working_file = "working_account.json"
@@ -184,21 +206,21 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     output_files = []
 
     with open(jwt_file, "w", encoding="utf-8") as f:
-      json.dump(jwt_tokens, f, indent=4)
+      json.dump(jwt_list, f, indent=4)
       output_files.append(jwt_file)
 
     with open(working_file, "w", encoding="utf-8") as f:
-      json.dump(working_accs, f, indent=4)
+      json.dump(working_list, f, indent=4)
       output_files.append(working_file)
 
     with open(lost_file, "w", encoding="utf-8") as f:
-      json.dump(lost_accs, f, indent=4)
+      json.dump(lost_list, f, indent=4)
       output_files.append(lost_file)
 
-    for reg_name, reg_dict in region_tokens.items():
+    for reg_name, reg_list in region_tokens.items():
       reg_file = f"accounts_{reg_name}.json"
       with open(reg_file, "w", encoding="utf-8") as f:
-        json.dump(reg_dict, f, indent=4)
+        json.dump(reg_list, f, indent=4)
         output_files.append(reg_file)
 
     summary = (
@@ -241,7 +263,9 @@ def main():
       .build()
   )
   app_bot.add_handler(CommandHandler("start", start))
-  app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+  app_bot.add_handler(
+      MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)
+  )
   app_bot.add_handler(
       MessageHandler(filters.Document.FileExtension("json"), handle_document)
   )
