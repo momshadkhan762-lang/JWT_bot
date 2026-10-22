@@ -44,7 +44,7 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAGWwdmHb-N7T_ATNEPRcaB8rLKpxadYPz4"
+BOT_TOKEN = "8854493990:AAEsA_4M2aDf6Fb067sGbH5m3K0Pao_TbgI"
 
 AES_KEY = b"Yg&tc%Deuh6%Zc^8"
 AES_IV = b"6oyZDr22EychjM%"
@@ -54,30 +54,31 @@ def get_token(password, uid):
   try:
     url = "https://ffmconnect.live.gop.garenanow.com/oauth/guest/token/grant"
     headers = {
-        "Host": "100067.connect.garena.com",
+        "Host": "ffmconnect.live.gop.garenanow.com",
         "User-Agent": "GarenaMSDK/4.0.19P4 (Vivo Y15c; Android 12; en;IN;)",
         "Content-Type": "application/x-www-form-urlencoded",
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "close",
     }
     data = {
-        "uid": uid,
-        "password": password,
+        "uid": str(uid),
+        "password": str(password),
         "response_type": "token",
         "client_type": "2",
         "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
         "client_id": "100067",
     }
     response = requests.post(url, headers=headers, data=data, verify=False, timeout=10)
-    if response.status_code != 200:
-      return None
-    return response.json()
+    if response.status_code == 200:
+      res_json = response.json()
+      if "access_token" in res_json:
+        return res_json["access_token"]
   except Exception:
-    return None
+    pass
+  return None
 
 
 def get_token_inspect_data(access_token):
-  """Inspect access token to get open_id and platform info"""
   try:
     url = f"https://100067.connect.garena.com/oauth/token/inspect?token={access_token}"
     headers = {
@@ -87,7 +88,7 @@ def get_token_inspect_data(access_token):
     response = requests.get(url, headers=headers, verify=False, timeout=10)
     if response.status_code == 200:
       data = response.json()
-      if "open_id" in data and "platform" in data and "uid" in data:
+      if "open_id" in data and "uid" in data:
         return data
   except Exception:
     pass
@@ -111,21 +112,19 @@ def parse_response(response_content):
 
 def process_access_token(password, uid):
   token_data = get_token_inspect_data(password)
+  access_token = password
+
   if not token_data:
-    grant_data = get_token(password, uid)
-    if grant_data and "access_token" in grant_data:
-      access_token = grant_data["access_token"]
+    new_token = get_token(password, uid)
+    if new_token:
+      access_token = new_token
       token_data = get_token_inspect_data(access_token)
-    else:
-      access_token = password
-  else:
-    access_token = password
 
   if not token_data:
     return str(uid), None, "N/A"
 
-  open_id = token_data["open_id"]
-  platform_type = token_data.get("platform")
+  open_id = token_data.get("open_id")
+  platform_type = token_data.get("platform", "1")
   uid_str = str(uid or token_data.get("uid"))
 
   try:
@@ -208,7 +207,8 @@ def process_access_token(password, uid):
       response_dict = parse_response(str(example_msg))
       jwt_tok = response_dict.get("token")
       region_name = response_dict.get("region", "N/A")
-      return uid_str, jwt_tok, region_name
+      if jwt_tok:
+        return uid_str, jwt_tok, region_name
   except Exception:
     pass
 
@@ -223,8 +223,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
   await update.message.reply_text(
-      "👋 Welcome!\n\nSend your `.json` access tokens file here.",
+      "👋 **Welcome to GW Token Processor Bot!**\n\nSend your `.json` access tokens file here to begin.",
       reply_markup=reply_markup,
+      parse_mode="Markdown",
   )
 
 
@@ -234,18 +235,25 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Please upload a valid `.json` file.")
     return
 
-  msg = await update.message.reply_text("📥 Downloading and processing file...")
+  # प्रोफेशनल लाइव प्रोग्रेस एनिमेशन स्टेप 1
+  msg = await update.message.reply_text(
+      "📥 **Downloading file...**\n`[▒▒▒▒▒▒▒▒▒▒] 10%`", parse_mode="Markdown"
+  )
+
   file_path = f"temp_{doc.file_name}"
   try:
     file = await context.bot.get_file(doc.file_id)
     await file.download_to_drive(file_path)
 
+    await msg.edit_text(
+        "🔍 **Analyzing JSON Structure...**\n`[███▒▒▒▒▒▒▒] 30%`",
+        parse_mode="Markdown",
+    )
+
     with open(file_path, "r", encoding="utf-8") as f:
       data = json.load(f)
 
     accounts_to_process = []
-    
-    # --- स्क्रीनशॉट वाले फॉर्मेट (uid और password की लिस्ट) के लिए फिक्स ---
     if isinstance(data, list):
       for acc in data:
         if isinstance(acc, dict):
@@ -257,9 +265,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       for u, t in data.items():
         if u is not None and t is not None:
           accounts_to_process.append((str(t), str(u)))
-    # -----------------------------------------------------------------
 
     total_count = len(accounts_to_process)
+
+    await msg.edit_text(
+        f"⚡ **Connecting to Garena Servers (OB55)...**\n📊 Total Accounts Found: `{total_count}`\n`[██████▒▒▒▒] 60%`",
+        parse_mode="Markdown",
+    )
+
     jwt_tokens = {}
     working_accs = {}
     lost_accs = {}
@@ -275,6 +288,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
           for pwd, u in accounts_to_process
       ]
       results = await asyncio.gather(*tasks)
+
+    await msg.edit_text(
+        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████] 90%`",
+        parse_mode="Markdown",
+    )
 
     for u_str, token, reg in results:
       if token and token != "N/A":
@@ -310,11 +328,15 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         json.dump(reg_dict, f, indent=4)
         output_files.append(reg_file)
 
+    # फाइनल प्रोफेशनल समरी मैसेज
     summary = (
         f"🏁 **Processing Complete!**\n"
-        f"📊 **Total Accounts:** {total_count}\n"
-        f"🟢 **Successful Tokens:** {success_count}\n"
-        f"❌ **Failed:** {total_count - success_count}"
+        f"━━━━━━━━━━━━━━━━━━━\n"
+        f"📊 **Total Accounts:** `{total_count}`\n"
+        f"🟢 **Successful Tokens:** `{success_count}`\n"
+        f"❌ **Failed/Invalid:** `{total_count - success_count}`\n"
+        f"━━━━━━━━━━━━━━━━━━━\n"
+        f"🚀 *Powered by GW & OB55 Protocol*"
     )
     await msg.edit_text(summary, parse_mode="Markdown")
 
@@ -325,14 +347,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.remove(f_path)
 
   except Exception as e:
-    await msg.edit_text(f"❌ Error: {str(e)}")
+    await msg.edit_text(f"❌ **Error Occurred:** `{str(e)}`", parse_mode="Markdown")
   finally:
     if os.path.exists(file_path):
       os.remove(file_path)
 
 
 async def post_init(application):
-  print("🤖 Bot started successfully with OB55 & Flask Keep-Alive!")
+  print("🤖 Bot started successfully with Professional Animations & OB55!")
 
 
 def main():
@@ -354,3 +376,4 @@ def main():
 
 if __name__ == "__main__":
   main()
+      
