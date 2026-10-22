@@ -39,7 +39,7 @@ def keep_alive():
 BOT_TOKEN = "8854493990:AAHyAsEXgkICkD0z1dtp-c3RCtPqSKpc7-4"
 
 # आपकी खरीदी गई ज़िप फाइल वाला एकदम सटीक और ओरिजिनल API URL
-API_URL = "https://jwt-api-kx6q.onrender.com/api/get_jwt?guest_uid={}&guest_password={}"
+API_URL = "https://star-jwt-api1.lovable.app/api/public/token?uid={}&password={}"
 
 
 def process_via_api(uid, password):
