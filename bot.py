@@ -44,51 +44,24 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAGQ4877d_obYzeGAoS358f8rRc5y0O_bFE"
+BOT_TOKEN = "8854493990:AAHIJNVNRB9mgyFD233wON3w1F1J6HHbUZo"
 
 AES_KEY = b"Yg&tc%Deuh6%Zc^8"
 AES_IV = b"6oyZDr22EychjM%"
 
 
-def get_token(password, uid):
-  try:
-    url = "https://ffmconnect.live.gop.garenanow.com/oauth/guest/token/grant"
-    headers = {
-        "Host": "ffmconnect.live.gop.garenanow.com",
-        "User-Agent": "GarenaMSDK/4.0.19P4 (Vivo Y15c; Android 12; en;IN;)",
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "close",
-    }
-    data = {
-        "uid": str(uid),
-        "password": str(password),
-        "response_type": "token",
-        "client_type": "2",
-        "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
-        "client_id": "100067",
-    }
-    response = requests.post(url, headers=headers, data=data, verify=False, timeout=10)
-    if response.status_code == 200:
-      res_json = response.json()
-      if "access_token" in res_json:
-        return res_json["access_token"]
-  except Exception:
-    pass
-  return None
-
-
 def get_token_inspect_data(access_token):
   try:
-    url = f"https://100067.connect.garena.com/oauth/token/inspect?token={access_token}"
+    # यहाँ सही पैरामीटर 'access_token' का इस्तेमाल किया गया है जो गरीना सर्वर से मैच करता है
+    url = f"https://100067.connect.garena.com/oauth/token/inspect?access_token={access_token}"
     headers = {
-        "User-Agent": "GarenaMSDK/4.0.19P4 (Vivo Y15c; Android 12; en;IN;)",
+        "User-Agent": "GarenaMSDK/4.0.2",
         "Connection": "close",
     }
     response = requests.get(url, headers=headers, verify=False, timeout=10)
     if response.status_code == 200:
       data = response.json()
-      if "open_id" in data and "uid" in data:
+      if "open_id" in data and "platform" in data:
         return data
   except Exception:
     pass
@@ -112,20 +85,13 @@ def parse_response(response_content):
 
 def process_access_token(password, uid):
   token_data = get_token_inspect_data(password)
-  access_token = password
-
-  if not token_data:
-    new_token = get_token(password, uid)
-    if new_token:
-      access_token = new_token
-      token_data = get_token_inspect_data(access_token)
-
   if not token_data:
     return str(uid), None, "N/A"
 
-  open_id = token_data.get("open_id")
-  platform_type = token_data.get("platform", "1")
+  open_id = token_data["open_id"]
+  platform_type = token_data.get("platform")
   uid_str = str(uid or token_data.get("uid"))
+  access_token = password
 
   try:
     game_data = my_pb2.GameData()
@@ -233,7 +199,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
   if text == "Process File ⚙️":
     await update.message.reply_text(
-        "📂 Please send your `.json` file to start processing tokens."
+        "📂 Please send your `.json` file containing UIDs and passwords/tokens to start processing."
     )
   elif text == "Status 👑":
     await update.message.reply_text("👑 **Bot Status:** Online & Active (OB55)")
@@ -243,8 +209,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
   elif text == "Help 🆘":
     await update.message.reply_text(
-        "🆘 Upload your JSON file containing `uid` and `password` to get JWT"
-        " tokens."
+        "🆘 Upload your JSON file containing `uid` and `password` to get JWT tokens."
     )
   elif text == "Cancel ❌":
     await update.message.reply_text("❌ Action cancelled.")
@@ -277,7 +242,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(data, list):
       for acc in data:
         if isinstance(acc, dict):
-          # दोनों फॉर्मेट (password या access_token) को सपोर्ट करेगा
           u = acc.get("uid") or acc.get("id")
           t = (
               acc.get("password")
@@ -294,8 +258,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_count = len(accounts_to_process)
 
     await msg.edit_text(
-        f"⚡ **Connecting to Garena Servers (OB55)...**\n📊 Total Accounts"
-        f" Found: `{total_count}`\n`[██████▒▒▒▒] 60%`",
+        f"⚡ **Connecting to Garena Servers (OB55)...**\n📊 Total Accounts Found: `{total_count}`\n`[██████▒▒▒▒] 60%`",
         parse_mode="Markdown",
     )
 
@@ -316,8 +279,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       results = await asyncio.gather(*tasks)
 
     await msg.edit_text(
-        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████]"
-        " 90%`",
+        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████] 90%`",
         parse_mode="Markdown",
     )
 
@@ -351,7 +313,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for reg_name, reg_dict in region_tokens.items():
       reg_file = f"accounts_{reg_name}.json"
-      with open(reg_file, "w", encoding="utf--8") as f:
+      with open(reg_file, "w", encoding="utf-8") as f:
         json.dump(reg_dict, f, indent=4)
         output_files.append(reg_file)
 
