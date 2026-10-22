@@ -22,7 +22,7 @@ from urllib3.exceptions import InsecureRequestWarning
 
 warnings.simplefilter("ignore", InsecureRequestWarning)
 
-# --- Flask Server for Render Web Service (Port Binding Keep-Alive) ---
+# --- Flask Server for Render Web Service Keep-Alive ---
 app = Flask(__name__)
 
 
@@ -42,22 +42,52 @@ def keep_alive():
   t.start()
 
 
-# ---------------------------------------------------------------------
+# -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAHTEjUT_ebSWP6xdKZa26NiNekfj2AVEz4"
+BOT_TOKEN = "8854493990:AAGkhoG-frCyYApQ1d"
 
 AES_KEY = b"Yg&tc%Deuh6%Zc^8"
 AES_IV = b"6oyZDr22EychjM%"
 
 
-def get_token_inspect_data(access_token):
+def get_token(password, uid):
   try:
-    url = f"https://100067.connect.garena.com/oauth/token/inspect?access_token={access_token}"
-    headers = {"User-Agent": "GarenaMSDK/4.0.2", "Connection": "close"}
+    url = "https://ffmconnect.live.gop.garenanow.com/oauth/guest/token/grant"
+    headers = {
+        "Host": "100067.connect.garena.com",
+        "User-Agent": "GarenaMSDK/4.0.19P4 (Vivo Y15c; Android 12; en;IN;)",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "close",
+    }
+    data = {
+        "uid": uid,
+        "password": password,
+        "response_type": "token",
+        "client_type": "2",
+        "client_secret": "2ee44819e9b4598845141067b281621874d0d5d7af9d8f7e00c1e54715b7d1e3",
+        "client_id": "100067",
+    }
+    response = requests.post(url, headers=headers, data=data, verify=False, timeout=10)
+    if response.status_code != 200:
+      return None
+    return response.json()
+  except Exception:
+    return None
+
+
+def get_token_inspect_data(access_token):
+  """Inspect access token to get open_id and platform info"""
+  try:
+    url = f"https://100067.connect.garena.com/oauth/token/inspect?token={access_token}"
+    headers = {
+        "User-Agent": "GarenaMSDK/4.0.19P4 (Vivo Y15c; Android 12; en;IN;)",
+        "Connection": "close",
+    }
     response = requests.get(url, headers=headers, verify=False, timeout=10)
     if response.status_code == 200:
       data = response.json()
-      if "open_id" in data and "platform" in data:
+      if "open_id" in data and "platform" in data and "uid" in data:
         return data
   except Exception:
     pass
@@ -79,8 +109,18 @@ def parse_response(response_content):
   return response_dict
 
 
-def process_access_token(access_token, uid):
-  token_data = get_token_inspect_data(access_token)
+def process_access_token(password, uid):
+  token_data = get_token_inspect_data(password)
+  if not token_data:
+    grant_data = get_token(password, uid)
+    if grant_data and "access_token" in grant_data:
+      access_token = grant_data["access_token"]
+      token_data = get_token_inspect_data(access_token)
+    else:
+      access_token = password
+  else:
+    access_token = password
+
   if not token_data:
     return str(uid), None, "N/A"
 
@@ -112,7 +152,7 @@ def process_access_token(access_token, uid):
     game_data.access_token = access_token
     game_data.platform_type = platform_type
     game_data.device_form_factor = "Handheld"
-    game_data.device_model = "realme RMX3241"
+    game_data.device_model = "ASUS_Z01QD"
     game_data.field_60 = 30000
     game_data.field_61 = 27500
     game_data.field_62 = 1940
@@ -147,21 +187,20 @@ def process_access_token(access_token, uid):
     serialized_data = game_data.SerializeToString()
     encrypted_data = encrypt_message(AES_KEY, AES_IV, serialized_data)
     hex_encrypted_data = binascii.hexlify(encrypted_data).decode("utf-8")
+    edata = bytes.fromhex(hex_encrypted_data)
 
-    url = "https://loginbp.ggblueshark.com/client/login"
+    url = "https://loginbp.ggblueshark.com/MajorLogin"
     headers = {
-        "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; RMX3241 Build/RKQ1.201105.002)",
+        "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 12; ASUS_Z01QD Build/PI)",
         "Connection": "Keep-Alive",
         "Accept-Encoding": "gzip",
         "Content-Type": "application/octet-stream",
         "Expect": "100-continue",
         "X-Unity-Version": "2018.4.11f1",
         "X-GA": "v1 1",
-        "ReleaseVersion": "OB54",
+        "ReleaseVersion": "OB55",
     }
-    response = requests.post(
-        url, headers=headers, data=binascii.unhexlify(hex_encrypted_data), timeout=15
-    )
+    response = requests.post(url, headers=headers, data=edata, timeout=15)
 
     if response.status_code == 200:
       example_msg = output_pb2.Lokesh()
@@ -205,17 +244,20 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       data = json.load(f)
 
     accounts_to_process = []
-    if isinstance(data, dict):
-      for u, token_val in data.items():
-        if u is not None and token_val is not None:
-          accounts_to_process.append((u, token_val))
-    elif isinstance(data, list):
+    
+    # --- स्क्रीनशॉट वाले फॉर्मेट (uid और password की लिस्ट) के लिए फिक्स ---
+    if isinstance(data, list):
       for acc in data:
         if isinstance(acc, dict):
-          u = acc.get("uid") or acc.get("id")
-          t = acc.get("access_token") or acc.get("token")
+          u = acc.get("uid")
+          t = acc.get("password")
           if u is not None and t is not None:
-            accounts_to_process.append((u, t))
+            accounts_to_process.append((str(t), str(u)))
+    elif isinstance(data, dict):
+      for u, t in data.items():
+        if u is not None and t is not None:
+          accounts_to_process.append((str(t), str(u)))
+    # -----------------------------------------------------------------
 
     total_count = len(accounts_to_process)
     jwt_tokens = {}
@@ -229,10 +271,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     with ThreadPoolExecutor(max_workers=5) as executor:
       tasks = [
-          loop.run_in_executor(
-              executor, process_access_token, token_val, u
-          )
-          for u, token_val in accounts_to_process
+          loop.run_in_executor(executor, process_access_token, pwd, u)
+          for pwd, u in accounts_to_process
       ]
       results = await asyncio.gather(*tasks)
 
@@ -292,7 +332,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def post_init(application):
-  print("🤖 Bot started successfully with Flask Keep-Alive!")
+  print("🤖 Bot started successfully with OB55 & Flask Keep-Alive!")
 
 
 def main():
@@ -314,4 +354,3 @@ def main():
 
 if __name__ == "__main__":
   main()
-      
