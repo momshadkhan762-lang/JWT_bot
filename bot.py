@@ -44,7 +44,7 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAGkhoG-frCyYApQ1d"
+BOT_TOKEN = "8854493990:AAGWwdmHb-N7T_ATNEPRcaB8rLKpxadYPz4"
 
 AES_KEY = b"Yg&tc%Deuh6%Zc^8"
 AES_IV = b"6oyZDr22EychjM%"
