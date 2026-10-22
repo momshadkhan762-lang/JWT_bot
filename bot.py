@@ -1,13 +1,9 @@
 import asyncio
-import binascii
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from threading import Thread
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
 from flask import Flask
-import my_pb2
-import output_pb2
 import requests
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import (
@@ -17,10 +13,6 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-import warnings
-from urllib3.exceptions import InsecureRequestWarning
-
-warnings.simplefilter("ignore", InsecureRequestWarning)
 
 # --- Flask Server for Render Web Service Keep-Alive ---
 app = Flask(__name__)
@@ -44,141 +36,27 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAHIJNVNRB9mgyFD233wON3w1F1J6HHbUZo"
+BOT_TOKEN = "8854493990:AAHyAsEXgkICkD0z1dtp-c3RCtPqSKpc7-4"
 
-AES_KEY = b"Yg&tc%Deuh6%Zc^8"
-AES_IV = b"6oyZDr22EychjM%"
+# आपकी खरीदी गई ज़िप फाइल वाला एकदम सटीक और ओरिजिनल API URL
+API_URL = "https://star-jwt-api1.lovable.app/api/public/token?uid={}&password={}"
 
 
-def get_token_inspect_data(access_token):
+def process_via_api(uid, password):
   try:
-    # यहाँ सही पैरामीटर 'access_token' का इस्तेमाल किया गया है जो गरीना सर्वर से मैच करता है
-    url = f"https://100067.connect.garena.com/oauth/token/inspect?access_token={access_token}"
-    headers = {
-        "User-Agent": "GarenaMSDK/4.0.2",
-        "Connection": "close",
-    }
-    response = requests.get(url, headers=headers, verify=False, timeout=10)
+    url = API_URL.format(uid, password)
+    response = requests.get(url, timeout=15)
     if response.status_code == 200:
-      data = response.json()
-      if "open_id" in data and "platform" in data:
-        return data
+      res_data = response.json()
+      if "token" in res_data:
+        return (
+            str(uid),
+            res_data["token"],
+            res_data.get("region", "IND"),
+        )
   except Exception:
     pass
-  return None
-
-
-def encrypt_message(key, iv, plaintext):
-  cipher = AES.new(key, AES.MODE_CBC, iv)
-  return cipher.encrypt(pad(plaintext, AES.block_size))
-
-
-def parse_response(response_content):
-  response_dict = {}
-  lines = response_content.split("\n")
-  for line in lines:
-    if ":" in line:
-      key, value = line.split(":", 1)
-      response_dict[key.strip()] = value.strip()
-  return response_dict
-
-
-def process_access_token(password, uid):
-  token_data = get_token_inspect_data(password)
-  if not token_data:
-    return str(uid), None, "N/A"
-
-  open_id = token_data["open_id"]
-  platform_type = token_data.get("platform")
-  uid_str = str(uid or token_data.get("uid"))
-  access_token = password
-
-  try:
-    game_data = my_pb2.GameData()
-    game_data.timestamp = "2025-05-29T10:00:00Z"
-    game_data.game_name = "free fire"
-    game_data.game_version = 1
-    game_data.version_code = "1.126.2"
-    game_data.os_info = "Android OS 11 / API-30 (RKQ1.201105.002/7112)"
-    game_data.device_type = "Handheld"
-    game_data.network_provider = "JIO"
-    game_data.connection_type = "MOBILE"
-    game_data.screen_width = 720
-    game_data.screen_height = 1600
-    game_data.dpi = "280"
-    game_data.cpu_info = "ARM Cortex-A55"
-    game_data.total_ram = 4096
-    game_data.gpu_name = "Adreno (TM) 610"
-    game_data.gpu_version = "OpenGL ES 3.2"
-    game_data.user_id = uid_str
-    game_data.ip_address = "182.75.115.10"
-    game_data.language = "en"
-    game_data.open_id = open_id
-    game_data.access_token = access_token
-    game_data.platform_type = platform_type
-    game_data.device_form_factor = "Handheld"
-    game_data.device_model = "ASUS_Z01QD"
-    game_data.field_60 = 30000
-    game_data.field_61 = 27500
-    game_data.field_62 = 1940
-    game_data.field_63 = 720
-    game_data.field_64 = 28000
-    game_data.field_65 = 30000
-    game_data.field_66 = 28000
-    game_data.field_67 = 30000
-    game_data.field_70 = 4
-    game_data.field_73 = 2
-    game_data.library_path = "/data/app/~~X==/lib/arm64"
-    game_data.field_76 = 1
-    game_data.apk_info = "2f4a7f349f3a9e5b7c8d1e2f3a4b5c6d"
-    game_data.field_78 = 6
-    game_data.field_79 = 1
-    game_data.os_architecture = "64"
-    game_data.build_number = "2022041315"
-    game_data.field_85 = 1
-    game_data.graphics_backend = "OpenGL"
-    game_data.max_texture_units = 16384
-    game_data.rendering_api = 4
-    game_data.encoded_field_89 = b"\x10\x01"
-    game_data.field_92 = 8999
-    game_data.marketplace = "3rd_party"
-    game_data.encryption_key = "Jp2DT7..."
-    game_data.total_storage = 64000
-    game_data.field_97 = 1
-    game_data.field_98 = 1
-    game_data.field_99 = str(platform_type)
-    game_data.field_100 = str(platform_type)
-
-    serialized_data = game_data.SerializeToString()
-    encrypted_data = encrypt_message(AES_KEY, AES_IV, serialized_data)
-    hex_encrypted_data = binascii.hexlify(encrypted_data).decode("utf-8")
-    edata = bytes.fromhex(hex_encrypted_data)
-
-    url = "https://loginbp.ggblueshark.com/MajorLogin"
-    headers = {
-        "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 12; ASUS_Z01QD Build/PI)",
-        "Connection": "Keep-Alive",
-        "Accept-Encoding": "gzip",
-        "Content-Type": "application/octet-stream",
-        "Expect": "100-continue",
-        "X-Unity-Version": "2018.4.11f1",
-        "X-GA": "v1 1",
-        "ReleaseVersion": "OB55",
-    }
-    response = requests.post(url, headers=headers, data=edata, timeout=15)
-
-    if response.status_code == 200:
-      example_msg = output_pb2.Lokesh()
-      example_msg.ParseFromString(response.content)
-      response_dict = parse_response(str(example_msg))
-      jwt_tok = response_dict.get("token")
-      region_name = response_dict.get("region", "N/A")
-      if jwt_tok:
-        return uid_str, jwt_tok, region_name
-  except Exception:
-    pass
-
-  return uid_str, None, "N/A"
+  return str(uid), None, "N/A"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -189,7 +67,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
   await update.message.reply_text(
-      "👋 **Welcome to GW Token Processor Bot!**\n\nSend your `.json` access tokens file here to begin.",
+      "👋 **Welcome to GW Token Processor Bot!**\n\nSend your `.json` access"
+      " tokens file here to begin.",
       reply_markup=reply_markup,
       parse_mode="Markdown",
   )
@@ -199,17 +78,21 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
   if text == "Process File ⚙️":
     await update.message.reply_text(
-        "📂 Please send your `.json` file containing UIDs and passwords/tokens to start processing."
+        "📂 Please send your `.json` file containing UIDs and passwords to start"
+        " processing."
     )
   elif text == "Status 👑":
-    await update.message.reply_text("👑 **Bot Status:** Online & Active (OB55)")
+    await update.message.reply_text(
+        "👑 **Bot Status:** Online & Active (API Gateway Mode)"
+    )
   elif text == "Shop 🛒":
     await update.message.reply_text(
         "🛒 Contact admin for premium services & tools."
     )
   elif text == "Help 🆘":
     await update.message.reply_text(
-        "🆘 Upload your JSON file containing `uid` and `password` to get JWT tokens."
+        "🆘 Upload your JSON file containing `uid` and `password` to get JWT"
+        " tokens."
     )
   elif text == "Cancel ❌":
     await update.message.reply_text("❌ Action cancelled.")
@@ -249,16 +132,17 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
               or acc.get("token")
           )
           if u is not None and t is not None:
-            accounts_to_process.append((str(t), str(u)))
+            accounts_to_process.append((str(u), str(t)))
     elif isinstance(data, dict):
       for u, t in data.items():
         if u is not None and t is not None:
-          accounts_to_process.append((str(t), str(u)))
+          accounts_to_process.append((str(u), str(t)))
 
     total_count = len(accounts_to_process)
 
     await msg.edit_text(
-        f"⚡ **Connecting to Garena Servers (OB55)...**\n📊 Total Accounts Found: `{total_count}`\n`[██████▒▒▒▒] 60%`",
+        f"⚡ **Connecting to Working API Gateway...**\n📊 Total Accounts Found:"
+        f" `{total_count}`\n`[██████▒▒▒▒] 60%`",
         parse_mode="Markdown",
     )
 
@@ -269,17 +153,17 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     success_count = 0
 
     loop = asyncio.get_event_loop()
-    from concurrent.futures import ThreadPoolExecutor
 
     with ThreadPoolExecutor(max_workers=5) as executor:
       tasks = [
-          loop.run_in_executor(executor, process_access_token, pwd, u)
-          for pwd, u in accounts_to_process
+          loop.run_in_executor(executor, process_via_api, u, pwd)
+          for u, pwd in accounts_to_process
       ]
       results = await asyncio.gather(*tasks)
 
     await msg.edit_text(
-        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████] 90%`",
+        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████]"
+        " 90%`",
         parse_mode="Markdown",
     )
 
@@ -324,7 +208,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🟢 **Successful Tokens:** `{success_count}`\n"
         f"❌ **Failed/Invalid:** `{total_count - success_count}`\n"
         f"━━━━━━━━━━━━━━━━━━━\n"
-        f"🚀 *Powered by GW & OB55 Protocol*"
+        f"🚀 *Powered by GW & API Gateway*"
     )
     await msg.edit_text(summary, parse_mode="Markdown")
 
@@ -344,7 +228,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def post_init(application):
-  print("🤖 Bot started successfully with Full Features & OB55!")
+  print("🤖 Bot started successfully with API Gateway & Keep-Alive!")
 
 
 def main():
