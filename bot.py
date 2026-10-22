@@ -45,7 +45,7 @@ API_URL = "https://star-jwt-api1.lovable.app/api/public/token?uid={}&password={}
 def process_via_api(uid, password):
   try:
     url = API_URL.format(uid, password)
-    response = requests.get(url, timeout=15)
+    response = requests.get(url, timeout=30)
     if response.status_code == 200:
       res_data = response.json()
       if "token" in res_data:
@@ -53,10 +53,15 @@ def process_via_api(uid, password):
             str(uid),
             res_data["token"],
             res_data.get("region", "IND"),
+            "SUCCESS",
         )
-  except Exception:
-    pass
-  return str(uid), None, "N/A"
+      else:
+        return str(uid), None, "N/A", "Empty Token in Response"
+  except requests.exceptions.Timeout:
+    return str(uid), None, "N/A", "API Timeout (Server Slow)"
+  except Exception as e:
+    return str(uid), None, "N/A", str(e)
+  return str(uid), None, "N/A", "Unknown Error"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -66,9 +71,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
       ["Cancel ❌"],
   ]
   reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+  
+  # एकदम स्टाइलिश और प्रमोशनल वेलकम मैसेज
+  welcome_text = (
+      "🔥 **WELCOME TO ELITE JWT TOKEN GENERATOR** 🔥\n"
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      "🚀 *The Ultimate & High-Speed Token Processing Bot*\n\n"
+      "⚡ **Key Features:**\n"
+      "• Lightning Fast API Gateway Integration 🌐\n"
+      "• Secure Guest Account Management 🛡️\n"
+      "• Region Sorting & Automatic Error Handling 📊\n\n"
+      "📂 **How to Get Started:**\n"
+      "Send your `.json` file containing UIDs and passwords below or click **'Process File ⚙️'** to begin! 👇\n"
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      "👑 *Powered by Advanced Automation*"
+  )
+  
   await update.message.reply_text(
-      "👋 **Welcome to GW Token Processor Bot!**\n\nSend your `.json` access"
-      " tokens file here to begin.",
+      welcome_text,
       reply_markup=reply_markup,
       parse_mode="Markdown",
   )
@@ -78,24 +98,26 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
   if text == "Process File ⚙️":
     await update.message.reply_text(
-        "📂 Please send your `.json` file containing UIDs and passwords to start"
-        " processing."
+        "📂 **Ready for Processing!**\n\nPlease send your `.json` file containing UIDs and passwords right here to start the magic. ✨",
+        parse_mode="Markdown"
     )
   elif text == "Status 👑":
     await update.message.reply_text(
-        "👑 **Bot Status:** Online & Active (API Gateway Mode)"
+        "👑 **Bot Status:** `Online & Active`\n🚀 *API Gateway Mode:* Connected Successfully ✅",
+        parse_mode="Markdown"
     )
   elif text == "Shop 🛒":
     await update.message.reply_text(
-        "🛒 Contact admin for premium services & tools."
+        "🛒 **VIP Shop & Services**\n\nContact admin for premium tools, scripts, and high-performance APIs.",
+        parse_mode="Markdown"
     )
   elif text == "Help 🆘":
     await update.message.reply_text(
-        "🆘 Upload your JSON file containing `uid` and `password` to get JWT"
-        " tokens."
+        "🆘 **Quick Help Guide:**\n\n1️⃣ Click on **Process File ⚙️**\n2️⃣ Upload your `.json` file (UID & Password format)\n3️⃣ Get your `jwt_token.json` and sorted files instantly!",
+        parse_mode="Markdown"
     )
   elif text == "Cancel ❌":
-    await update.message.reply_text("❌ Action cancelled.")
+    await update.message.reply_text("❌ Current action has been cancelled safely.")
 
 
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -104,7 +126,6 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ Please upload a valid `.json` file.")
     return
 
-  # शानदार और स्मूथ एनिमेशन स्टेप्स
   msg = await update.message.reply_text(
       "📥 **Downloading File...**\n`[██▒▒▒▒▒▒▒▒] 20%`", parse_mode="Markdown"
   )
@@ -165,7 +186,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     loop = asyncio.get_event_loop()
 
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    with ThreadPoolExecutor(max_workers=3) as executor:
       tasks = [
           loop.run_in_executor(executor, process_via_api, u, pwd)
           for u, pwd in accounts_to_process
@@ -178,7 +199,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-    for u_str, token, reg in results:
+    for u_str, token, reg, err_msg in results:
       pwd = uid_to_password.get(u_str, "")
       if token and token != "N/A":
         jwt_list.append({"token": token})
@@ -191,7 +212,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lost_list.append({
             "uid": u_str,
             "password": pwd,
-            "error_reason": "API OK but invalid response format or empty token",
+            "error_reason": err_msg,
         })
 
     await asyncio.sleep(0.3)
@@ -224,13 +245,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         output_files.append(reg_file)
 
     summary = (
-        f"🏁 **Processing Complete!**\n"
+        f"🏁 **PROCESSING COMPLETE!**\n"
         f"━━━━━━━━━━━━━━━━━━━\n"
         f"📊 **Total Accounts:** `{total_count}`\n"
         f"🟢 **Successful Tokens:** `{success_count}`\n"
         f"❌ **Failed/Invalid:** `{total_count - success_count}`\n"
         f"━━━━━━━━━━━━━━━━━━━\n"
-        f"🚀 *Powered by GW & API Gateway*"
+        f"🚀 *Powered by Elite JWT Token Bot*"
     )
     await msg.edit_text(summary, parse_mode="Markdown")
 
@@ -275,3 +296,4 @@ def main():
 
 if __name__ == "__main__":
   main()
+    
