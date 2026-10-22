@@ -16,7 +16,7 @@ import output_pb2
 
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 
-BOT_TOKEN = "8854493990:AAGiLACs9kqtrdx3LNOI73xSgpiR5-aS4nQ"
+BOT_TOKEN = "8854493990:AAGkhoG-frCyYApQ1d2FRGQYGCLV7nS8Gj8"
 
 AES_KEY = b'Yg&tc%DEuh6%Zc^8'
 AES_IV = b'6oyZDr22E3ychjM%'
