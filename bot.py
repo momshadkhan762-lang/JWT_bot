@@ -44,7 +44,7 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAEsA_4M2aDf6Fb067sGbH5m3K0Pao_TbgI"
+BOT_TOKEN = "8854493990:AAGQ4877d_obYzeGAoS358f8rRc5y0O_bFE"
 
 AES_KEY = b"Yg&tc%Deuh6%Zc^8"
 AES_IV = b"6oyZDr22EychjM%"
@@ -229,13 +229,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   )
 
 
+async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+  text = update.message.text
+  if text == "Process File ⚙️":
+    await update.message.reply_text(
+        "📂 Please send your `.json` file to start processing tokens."
+    )
+  elif text == "Status 👑":
+    await update.message.reply_text("👑 **Bot Status:** Online & Active (OB55)")
+  elif text == "Shop 🛒":
+    await update.message.reply_text(
+        "🛒 Contact admin for premium services & tools."
+    )
+  elif text == "Help 🆘":
+    await update.message.reply_text(
+        "🆘 Upload your JSON file containing `uid` and `password` to get JWT"
+        " tokens."
+    )
+  elif text == "Cancel ❌":
+    await update.message.reply_text("❌ Action cancelled.")
+
+
 async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
   doc = update.message.document
   if not doc or not doc.file_name.endswith(".json"):
     await update.message.reply_text("❌ Please upload a valid `.json` file.")
     return
 
-  # प्रोफेशनल लाइव प्रोग्रेस एनिमेशन स्टेप 1
   msg = await update.message.reply_text(
       "📥 **Downloading file...**\n`[▒▒▒▒▒▒▒▒▒▒] 10%`", parse_mode="Markdown"
   )
@@ -257,8 +277,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if isinstance(data, list):
       for acc in data:
         if isinstance(acc, dict):
-          u = acc.get("uid")
-          t = acc.get("password")
+          # दोनों फॉर्मेट (password या access_token) को सपोर्ट करेगा
+          u = acc.get("uid") or acc.get("id")
+          t = (
+              acc.get("password")
+              or acc.get("access_token")
+              or acc.get("token")
+          )
           if u is not None and t is not None:
             accounts_to_process.append((str(t), str(u)))
     elif isinstance(data, dict):
@@ -269,7 +294,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total_count = len(accounts_to_process)
 
     await msg.edit_text(
-        f"⚡ **Connecting to Garena Servers (OB55)...**\n📊 Total Accounts Found: `{total_count}`\n`[██████▒▒▒▒] 60%`",
+        f"⚡ **Connecting to Garena Servers (OB55)...**\n📊 Total Accounts"
+        f" Found: `{total_count}`\n`[██████▒▒▒▒] 60%`",
         parse_mode="Markdown",
     )
 
@@ -290,7 +316,8 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       results = await asyncio.gather(*tasks)
 
     await msg.edit_text(
-        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████] 90%`",
+        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████]"
+        " 90%`",
         parse_mode="Markdown",
     )
 
@@ -324,11 +351,10 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for reg_name, reg_dict in region_tokens.items():
       reg_file = f"accounts_{reg_name}.json"
-      with open(reg_file, "w", encoding="utf-8") as f:
+      with open(reg_file, "w", encoding="utf--8") as f:
         json.dump(reg_dict, f, indent=4)
         output_files.append(reg_file)
 
-    # फाइनल प्रोफेशनल समरी मैसेज
     summary = (
         f"🏁 **Processing Complete!**\n"
         f"━━━━━━━━━━━━━━━━━━━\n"
@@ -347,14 +373,16 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.remove(f_path)
 
   except Exception as e:
-    await msg.edit_text(f"❌ **Error Occurred:** `{str(e)}`", parse_mode="Markdown")
+    await msg.edit_text(
+        f"❌ **Error Occurred:** `{str(e)}`", parse_mode="Markdown"
+    )
   finally:
     if os.path.exists(file_path):
       os.remove(file_path)
 
 
 async def post_init(application):
-  print("🤖 Bot started successfully with Professional Animations & OB55!")
+  print("🤖 Bot started successfully with Full Features & OB55!")
 
 
 def main():
@@ -367,6 +395,7 @@ def main():
       .build()
   )
   app_bot.add_handler(CommandHandler("start", start))
+  app_bot.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
   app_bot.add_handler(
       MessageHandler(filters.Document.FileExtension("json"), handle_document)
   )
@@ -376,4 +405,3 @@ def main():
 
 if __name__ == "__main__":
   main()
-      
