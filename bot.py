@@ -36,7 +36,7 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAEXLWaA0AouikzHzImIu9wU6Ul_QXSIxRc"
+BOT_TOKEN = "8854493990:AAHKQ97yYb69Nm01AOYpdAbl4oraAZW0pzE"
 
 # API URL
 API_URL = "https://star-jwt-api1.lovable.app/api/public/token?uid={}&password={}"
