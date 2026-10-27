@@ -199,7 +199,7 @@ async def handle_document(update: Update, context: ContextTypes.DEFAULT_TYPE):
     region_tokens = {}
     success_count = 0
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.get_running_loop()
 
     with ThreadPoolExecutor(max_workers=5) as executor:
       tasks = [
